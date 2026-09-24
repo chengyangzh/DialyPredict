@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>DialyPredict — Synthetic Interface Preview</title>
+  <style>
+    :root { --ink:#18312f; --muted:#667673; --paper:#f5f4ef; --card:#fffefa; --line:#d8ddd8; --green:#176b5b; --mint:#e2eee9; --amber:#a9621f; --shadow:0 16px 45px rgba(27,48,45,.08); }
+    * { box-sizing:border-box; }
+    body { margin:0; color:var(--ink); background:var(--paper); font:15px/1.5 Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+    header { padding:28px max(24px,calc((100vw - 1180px)/2)); border-bottom:1px solid var(--line); background:rgba(255,254,250,.9); }
+    .brand { display:flex; justify-content:space-between; gap:20px; align-items:center; }
+    h1 { margin:0; font:600 27px/1.1 Georgia, serif; letter-spacing:-.02em; }
+    .badge { border:1px solid #b9cbc4; color:var(--green); border-radius:999px; padding:6px 11px; font-size:12px; }
+    main { max-width:1180px; margin:0 auto; padding:30px 24px 60px; }
+    .intro { max-width:760px; color:var(--muted); margin:0 0 22px; }
+    .tabs { display:flex; gap:6px; margin-bottom:16px; }
+    .tab { border:1px solid var(--line); background:transparent; color:var(--muted); border-radius:10px; padding:10px 16px; cursor:pointer; }
+    .tab.active { color:white; border-color:var(--green); background:var(--green); }
+    .workspace { display:grid; grid-template-columns:1fr 1.22fr; gap:18px; }
+    .card { background:var(--card); border:1px solid var(--line); border-radius:16px; padding:20px; box-shadow:var(--shadow); }
+    .card h2 { font-size:16px; margin:0 0 4px; }
+    .sub { color:var(--muted); font-size:13px; margin:0 0 17px; }
+    .section + .section { border-top:1px solid var(--line); margin-top:20px; padding-top:18px; }
+    .field { display:grid; grid-template-columns:120px 1fr 54px; gap:12px; align-items:center; margin:13px 0; }
+    label { font-size:13px; }
+    input[type=range] { width:100%; accent-color:var(--green); }
+    output { text-align:right; font-variant-numeric:tabular-nums; font-weight:650; }
+    select { width:100%; border:1px solid var(--line); border-radius:8px; padding:8px; background:white; color:var(--ink); }
+    .result { display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; }
+    .metric { background:#f2f6f3; border-radius:12px; padding:14px; min-height:95px; }
+    .metric span { display:block; color:var(--muted); font-size:12px; }
+    .metric strong { display:block; font:600 27px/1.25 Georgia,serif; margin-top:8px; }
+    .meter { height:10px; margin:22px 0 8px; background:#e6e8e4; border-radius:99px; overflow:hidden; }
+    .meter i { display:block; height:100%; width:0; background:var(--green); border-radius:inherit; transition:width .25s; }
+    .axis { display:flex; justify-content:space-between; color:var(--muted); font-size:11px; }
+    .candidate { display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; margin-top:18px; padding:15px; border:1px solid #b9cbc4; background:var(--mint); border-radius:12px; }
+    .candidate b { display:block; font-size:17px; }
+    .note { margin-top:15px; color:var(--muted); font-size:12px; }
+    .hidden { display:none; }
+    @media (max-width:800px) { .workspace { grid-template-columns:1fr; } .result { grid-template-columns:1fr; } }
+  </style>
+</head>
+<body>
+  <header><div class="brand"><h1>DialyPredict</h1><span class="badge">Synthetic software preview · no clinical data</span></div></header>
+  <main>
+    <p class="intro">Explore how a future clinician-facing interface could compare a current prescription with constrained Qb and duration scenarios. Every value on this page is deliberately invented and is not a clinical estimate.</p>
+    <div class="tabs">
+      <button class="tab active" data-panel="spktv">spKt/V module</button>
+      <button class="tab" data-panel="hdf">HDF module</button>
+    </div>
+    <div class="workspace">
+      <section class="card">
+        <div class="section">
+          <h2>Patient context</h2><p class="sub">Context variables remain fixed during scenario search.</p>
+          <div class="field"><label for="age">Age</label><input id="age" type="range" min="18" max="90" value="58"><output id="ageOut"></output></div>
+          <div class="field"><label for="weight">Post weight</label><input id="weight" type="range" min="40" max="110" value="66"><output id="weightOut"></output></div>
+          <div class="field"><label for="height">Height</label><input id="height" type="range" min="140" max="195" value="168"><output id="heightOut"></output></div>
+          <div class="field"><label for="access">Access</label><select id="access"><option>Arteriovenous fistula</option><option>Graft</option><option>Catheter</option></select><span></span></div>
+        </div>
+        <div class="section">
+          <h2>Adjustable scenario</h2><p class="sub">Only Qb and treatment duration are changed.</p>
+          <div class="field"><label for="qb">Prescribed Qb</label><input id="qb" type="range" min="180" max="350" step="5" value="230"><output id="qbOut"></output></div>
+          <div class="field"><label for="duration">Actual duration</label><input id="duration" type="range" min="180" max="300" step="5" value="225"><output id="durationOut"></output></div>
+        </div>
+      </section>
+      <section class="card" id="spktvPanel">
+        <h2>spKt/V scenario</h2><p class="sub">Synthetic response surface with an illustrative uncertainty band.</p>
+        <div class="result">
+          <div class="metric"><span>Point estimate</span><strong id="ktv">—</strong></div>
+          <div class="metric"><span>Illustrative interval</span><strong id="interval">—</strong></div>
+          <div class="metric"><span>Evidence gate</span><strong id="gate">—</strong></div>
+        </div>
+        <div class="meter"><i id="ktvMeter"></i></div><div class="axis"><span>0.8</span><span>target 1.2</span><span>1.6</span></div>
+        <div class="candidate"><div><span>Candidate Qb</span><b id="recQb">—</b></div><div><span>Candidate duration</span><b id="recTime">—</b></div><div><span>Candidate estimate</span><b id="recKtv">—</b></div></div>
+        <p class="note">A production system would use held-out calibration, patient-disjoint validation, empirical-support checks and clinician review. This page does not contain a trained model.</p>
+      </section>
+      <section class="card hidden" id="hdfPanel">
+        <h2>HDF convective-volume scenario</h2><p class="sub">Separate synthetic endpoint; not combined with spKt/V.</p>
+        <div class="result">
+          <div class="metric"><span>Total convective volume</span><strong id="conv">—</strong></div>
+          <div class="metric"><span>Illustrative interval</span><strong id="convInterval">—</strong></div>
+          <div class="metric"><span>Support status</span><strong id="convGate">—</strong></div>
+        </div>
+        <div class="meter"><i id="convMeter"></i></div><div class="axis"><span>8 L</span><span>illustrative target 20 L</span><span>30 L</span></div>
+        <div class="candidate"><div><span>Candidate Qb</span><b id="hdfQb">—</b></div><div><span>Candidate duration</span><b id="hdfTime">—</b></div><div><span>Candidate volume</span><b id="hdfConv">—</b></div></div>
+        <p class="note">The displayed threshold and response are interface placeholders only. A clinical HDF model requires endpoint, unit and eligibility definitions approved by the clinical team.</p>
+      </section>
+    </div>
+  </main>
+  <script>
+    const $ = id => document.getElementById(id);
+    const controls = ["age","weight","height","qb","duration"].map($);
+    function syntheticKtv(qb,time,weight) { return Math.max(.65, .24 + .00165*qb + .00265*time - .0031*(weight-65)); }
+    function syntheticConv(qb,time,weight) { return Math.max(5, 5.8 + .047*(qb-180) + .091*(time-180) - .025*(weight-65)); }
+    function findCandidate(fn,target) {
+      const currentQb=+$('qb').value, currentTime=+$('duration').value, weight=+$('weight').value;
+      let best=null;
+      for(let t=currentTime;t<=300;t+=5) for(let q=currentQb;q<=350;q+=5) {
+        const value=fn(q,t,weight), cost=(q-currentQb)/170+(t-currentTime)/120;
+        if(value>=target && (!best || cost<best.cost)) best={q,t,value,cost};
+      }
+      return best;
+    }
+    function render() {
+      const age=+$('age').value, weight=+$('weight').value, height=+$('height').value, qb=+$('qb').value, time=+$('duration').value;
+      $('ageOut').value=age+' y'; $('weightOut').value=weight+' kg'; $('heightOut').value=height+' cm'; $('qbOut').value=qb+' mL/min'; $('durationOut').value=time+' min';
+      const ktv=syntheticKtv(qb,time,weight), radius=.10;
+      $('ktv').textContent=ktv.toFixed(2); $('interval').textContent=(ktv-radius).toFixed(2)+'–'+(ktv+radius).toFixed(2);
+      $('gate').textContent=ktv-radius>=1.2?'Robust':ktv>=1.2?'Explore':'Below target';
+      $('ktvMeter').style.width=Math.max(0,Math.min(100,(ktv-.8)/.8*100))+'%';
+      const k=findCandidate(syntheticKtv,1.2); $('recQb').textContent=k?k.q+' mL/min':'No candidate'; $('recTime').textContent=k?k.t+' min':'—'; $('recKtv').textContent=k?k.value.toFixed(2):'—';
+      const conv=syntheticConv(qb,time,weight), cr=1.8;
+      $('conv').textContent=conv.toFixed(1)+' L'; $('convInterval').textContent=(conv-cr).toFixed(1)+'–'+(conv+cr).toFixed(1)+' L'; $('convGate').textContent=conv-cr>=20?'Robust':conv>=20?'Explore':'Below target';
+      $('convMeter').style.width=Math.max(0,Math.min(100,(conv-8)/22*100))+'%';
+      const h=findCandidate(syntheticConv,20); $('hdfQb').textContent=h?h.q+' mL/min':'No candidate'; $('hdfTime').textContent=h?h.t+' min':'—'; $('hdfConv').textContent=h?h.value.toFixed(1)+' L':'—';
+    }
+    controls.forEach(control=>control.addEventListener('input',render));
+    document.querySelectorAll('.tab').forEach(button=>button.addEventListener('click',()=>{
+      document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active')); button.classList.add('active');
+      $('spktvPanel').classList.toggle('hidden',button.dataset.panel!=='spktv'); $('hdfPanel').classList.toggle('hidden',button.dataset.panel!=='hdf');
+    }));
+    render();
+  </script>
+</body>
+</html>
