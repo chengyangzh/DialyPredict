@@ -4,14 +4,30 @@ from pathlib import Path
 from bs4 import BeautifulSoup
 
 OUT=Path('kaom_batch_output'); RAW=OUT/'raw_html'; RAW.mkdir(parents=True, exist_ok=True)
-UA='WangLi-timeplanes-source-audit/1.0 (academic research; low-rate public-data crawl)'
-CHARS=['車','馬','牛','羊','犬','鳥','魚','雨','雲','川','河','海','石','田','禾','米','門','家','君','臣']
-ENDPOINTS=[
- ('jingdian_shiwen','http://www.kaom.net/zgy_jdsw8.php',lambda c:[('word',c),('mode','word'),('bianti','no'),('wenzi','查 詢')]),
- ('buddhist_yinyi','http://www.kaom.net/book_vot8.php',lambda c:[('word',c),('mode','word'),('bianti','yes')]),
- ('wang_rhyme_books','http://www.kaom.net/word8.php',lambda c:[('word',c),('mode','word'),('bianti','yes'),('book[]','jinshuyinyi'),('book[]','qieyun'),('book[]','zhongyuanyinyun'),('book[]','zhongzhouyinyun')]),
- ('jiajie_tongjia','http://www.kaom.net/book_jiajie8.php',lambda c:[('word',c),('mode','word'),('page','no'),('bianti','yes')]),
-]
+UA='WangLi-timeplanes-source-audit/1.0 (academic research; source-driven low-rate public-data crawl)'
+
+SOURCE_JOBS={
+ 'jingdian_shiwen':{
+   'chars':['㐲','㐼','㑹','㒉','㒼','㓨','㓷','㔻','㕞','㕣','㖩','㗉','㗛','㘲','㚄','㚟','㛮','㛰','㜸','㝔','㝠','㝱','㝷','㞵','㟪'],
+   'url':'http://www.kaom.net/zgy_jdsw8.php',
+   'make':lambda c:[('word',c),('mode','word'),('bianti','no'),('wenzi','查 詢')]
+ },
+ 'buddhist_yinyi':{
+   'chars':['㐭','㑌','㑗','㑥','㑦','㑷','㒋','㒤','㒵','㓗','㓨','㕘','㕟','㕺','㖑','㖟','㖶','㗖','㗧','㘝','㙪','㚊','㝡','㝯','㝹'],
+   'url':'http://www.kaom.net/book_vot8.php',
+   'make':lambda c:[('word',c),('mode','word'),('bianti','yes')]
+ },
+ 'wang_rhyme_books':{
+   'chars':['㐌','㐫','㑳','㑹','㒋','㒯','㓜','㓶','㓽','㔨','㕒','㖔','㗢','㗦','㘅','㙲','㚀','㚇','㚟','㜞','㜪','㜰','㜷','㝞','㝠'],
+   'url':'http://www.kaom.net/word8.php',
+   'make':lambda c:[('word',c),('mode','word'),('bianti','yes'),('book[]','jinshuyinyi'),('book[]','qieyun'),('book[]','zhongyuanyinyun'),('book[]','zhongzhouyinyun')]
+ },
+ 'jiajie_tongjia':{
+   'chars':['㐲','㐼','㑹','㒉','㒼','㓨','㓷','㔻','㕞','㕣','㖩','㗉','㗛','㘲','㚄','㚟','㛮','㛰','㜸','㝔','㝠','㝱','㝷','㞵','㟪'],
+   'url':'http://www.kaom.net/book_jiajie8.php',
+   'make':lambda c:[('word',c),('mode','word'),('page','no'),('bianti','yes')]
+ },
+}
 
 def fetch(name,url,data):
     path=RAW/name
@@ -37,12 +53,12 @@ def parse_tables(html, module, query_char, raw_path):
     return out
 
 manifest=[]; rows=[]; first=True
-for ch in CHARS:
-    for module,url,maker in ENDPOINTS:
+for module,spec in SOURCE_JOBS.items():
+    for ch in spec['chars']:
         if not first: time.sleep(4.2)
         first=False
         fn=f'{module}_{ord(ch):X}.html'
-        p,b=fetch(fn,url,maker(ch))
+        p,b=fetch(fn,spec['url'],spec['make'](ch))
         text=b.decode('utf-8','ignore')
         manifest.append({'module':module,'query_char':ch,'http':p.stdout.strip(),'returncode':p.returncode,'bytes':len(b),'sha256':hashlib.sha256(b).hexdigest() if b else '', 'tables':text.lower().count('<table'),'trs':text.lower().count('<tr'),'rate_limit':'點擊過頻' in text,'error':p.stderr.strip(),'raw_html':f'raw_html/{fn}'})
         if b: rows.extend(parse_tables(text,module,ch,f'raw_html/{fn}'))
@@ -51,4 +67,6 @@ with open(OUT/'request_manifest.csv','w',encoding='utf-8-sig',newline='') as f:
 with open(OUT/'parsed_rows.csv','w',encoding='utf-8-sig',newline='') as f:
     fields=['module','query_char','table_index','row_index','headers_json','cells_json','links','raw_html']
     w=csv.DictWriter(f,fieldnames=fields); w.writeheader(); w.writerows(rows)
+with open(OUT/'source_batch_summary.json','w',encoding='utf-8') as f:
+    json.dump({'requests':len(manifest),'parsed_rows':len(rows),'errors':sum(1 for x in manifest if x['returncode']!=0),'rate_limited':sum(1 for x in manifest if x['rate_limit']),'requests_by_module':{m:sum(1 for x in manifest if x['module']==m) for m in SOURCE_JOBS}},f,ensure_ascii=False,indent=2)
 print(json.dumps({'requests':len(manifest),'parsed_rows':len(rows),'errors':sum(1 for x in manifest if x['returncode']!=0),'rate_limited':sum(1 for x in manifest if x['rate_limit'])},ensure_ascii=False))
