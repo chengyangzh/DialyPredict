@@ -1,0 +1,22 @@
+name: kaom-bulk-probe
+on:
+  push:
+    branches: [kaom-crawl-probe-20261001]
+  workflow_dispatch:
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Probe public Kaom forms
+        run: python kaom_probe.py
+      - name: Upload probe outputs
+        uses: actions/upload-artifact@v4
+        with:
+          name: kaom-probe-output
+          path: kaom_probe_output/
+          if-no-files-found: error
