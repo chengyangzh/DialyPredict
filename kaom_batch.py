@@ -5,7 +5,7 @@ from bs4 import BeautifulSoup
 
 OUT=Path('kaom_batch_output'); RAW=OUT/'raw_html'; RAW.mkdir(parents=True, exist_ok=True)
 UA='WangLi-timeplanes-source-audit/1.0 (academic research; low-rate public-data crawl)'
-CHARS=['東','中','王','人','天']
+CHARS=['一','大','小','上','下','生','山','水','日','月']
 ENDPOINTS=[
  ('jingdian_shiwen','http://www.kaom.net/zgy_jdsw8.php',lambda c:[('word',c),('mode','word'),('bianti','no'),('wenzi','查 詢')]),
  ('buddhist_yinyi','http://www.kaom.net/book_vot8.php',lambda c:[('word',c),('mode','word'),('bianti','yes')]),
@@ -32,13 +32,8 @@ def parse_tables(html, module, query_char, raw_path):
         for ri,tr in enumerate(trs[1:],start=1):
             cells=[x.get_text(' ',strip=True) for x in tr.find_all(['th','td'])]
             if not cells: continue
-            links=[';'.join(a.get('href','') for a in tr.find_all('a',href=True))]
-            out.append({
-                'module':module,'query_char':query_char,'table_index':ti,'row_index':ri,
-                'headers_json':json.dumps(headers,ensure_ascii=False),
-                'cells_json':json.dumps(cells,ensure_ascii=False),
-                'links':links[0],'raw_html':raw_path
-            })
+            links=';'.join(a.get('href','') for a in tr.find_all('a',href=True))
+            out.append({'module':module,'query_char':query_char,'table_index':ti,'row_index':ri,'headers_json':json.dumps(headers,ensure_ascii=False),'cells_json':json.dumps(cells,ensure_ascii=False),'links':links,'raw_html':raw_path})
     return out
 
 manifest=[]; rows=[]; first=True
@@ -50,8 +45,7 @@ for ch in CHARS:
         p,b=fetch(fn,url,maker(ch))
         text=b.decode('utf-8','ignore')
         manifest.append({'module':module,'query_char':ch,'http':p.stdout.strip(),'returncode':p.returncode,'bytes':len(b),'sha256':hashlib.sha256(b).hexdigest() if b else '', 'tables':text.lower().count('<table'),'trs':text.lower().count('<tr'),'rate_limit':'點擊過頻' in text,'error':p.stderr.strip(),'raw_html':f'raw_html/{fn}'})
-        if b:
-            rows.extend(parse_tables(text,module,ch,f'raw_html/{fn}'))
+        if b: rows.extend(parse_tables(text,module,ch,f'raw_html/{fn}'))
 with open(OUT/'request_manifest.csv','w',encoding='utf-8-sig',newline='') as f:
     w=csv.DictWriter(f,fieldnames=manifest[0].keys()); w.writeheader(); w.writerows(manifest)
 with open(OUT/'parsed_rows.csv','w',encoding='utf-8-sig',newline='') as f:
