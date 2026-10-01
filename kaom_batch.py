@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
-import csv, json, subprocess, time, hashlib, re
+import csv, json, subprocess, time, hashlib
 from pathlib import Path
 from bs4 import BeautifulSoup
 
 OUT=Path('kaom_batch_output'); RAW=OUT/'raw_html'; RAW.mkdir(parents=True, exist_ok=True)
 UA='WangLi-timeplanes-source-audit/1.0 (academic research; low-rate public-data crawl)'
-CHARS=['一','大','小','上','下','生','山','水','日','月']
+CHARS=['地','風','火','木','金','土','口','手','心','目','耳','子','女','父','母','兄','弟','學','文','國']
 ENDPOINTS=[
  ('jingdian_shiwen','http://www.kaom.net/zgy_jdsw8.php',lambda c:[('word',c),('mode','word'),('bianti','no'),('wenzi','查 詢')]),
  ('buddhist_yinyi','http://www.kaom.net/book_vot8.php',lambda c:[('word',c),('mode','word'),('bianti','yes')]),
