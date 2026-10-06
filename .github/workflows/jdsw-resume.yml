@@ -1,0 +1,42 @@
+name: jdsw-resume-missing
+on:
+  push:
+    branches: [kaom-crawl-probe-20261001]
+    paths: [jdsw_resume_trigger.txt]
+  workflow_dispatch:
+jobs:
+  resume:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    permissions:
+      actions: read
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install dependencies
+        run: pip install beautifulsoup4 requests
+      - name: Download all prior JDSW artifacts
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          mkdir -p prior_artifacts
+          gh api --paginate "repos/$GH_REPO/actions/artifacts?per_page=100" --jq '.artifacts[] | select(.expired==false and (.name|startswith("jdsw-full-chunk-") or startswith("jdsw-resume-"))) | [.id,.name] | @tsv' > /tmp/artifacts.tsv
+          while IFS=$'\t' read -r id name; do
+            [ -z "$id" ] && continue
+            mkdir -p "prior_artifacts/$id"
+            gh api "repos/$GH_REPO/actions/artifacts/$id/zip" > "/tmp/$id.zip"
+            unzip -q "/tmp/$id.zip" -d "prior_artifacts/$id" || true
+          done < /tmp/artifacts.tsv
+      - name: Resume only missing validated IDs
+        run: python jdsw_resume_crawl.py
+      - name: Upload resume artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: jdsw-resume-${{ github.run_id }}
+          path: jdsw_resume_output/
+          if-no-files-found: error
+          retention-days: 90
